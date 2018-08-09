@@ -20,7 +20,7 @@ class Environment():
         try:
             self.dirperms = int(os.environ['DIRPERMS'], 8)
         except Exception as e:
-            self.dirperms = int('0777', 8)
+            self.dirperms = None
         try:
             self.diruser = os.environ['DIRUSER']
         except Exception as e:
@@ -32,7 +32,7 @@ class Environment():
         try:
             self.fileperms = int(os.environ['FILEPERMS'], 8)
         except Exception as e:
-            self.fileperms = int('0664', 8)
+            self.fileperms = None
         try:
             self.fileuser = os.environ['FILEUSER']
         except Exception as e:
@@ -50,8 +50,10 @@ class MyHandler(events.FileSystemEventHandler):
         if type(event) == events.DirCreatedEvent:
             try:
                 msg.append('Directory {} created.'.format(event.src_path))
-                os.chmod(event.src_path, perms.dirperms)
-                msg.append('Changed perms to {}.'.format(oct(perms.dirperms)))
+                if perms.dirperms:
+                    os.chmod(event.src_path, perms.dirperms)
+                    msg.append('Changed perms to {}.'.format(
+                        oct(perms.dirperms)))
                 if perms.diruser or perms.dirgroup:
                     if not perms.diruser:
                         uid = os.stat(event.src_path).st_uid
@@ -75,14 +77,17 @@ class MyHandler(events.FileSystemEventHandler):
         if type(event) == events.FileCreatedEvent:
             try:
                 msg.append('File {} created.'.format(event.src_path))
-                os.chmod(event.src_path, perms.fileperms)
-                msg.append('Changed perms to {}.'.format(oct(perms.fileperms)))
+                if perms.fileperms:
+                    os.chmod(event.src_path, perms.fileperms)
+                    msg.append('Changed perms to {}.'.format(
+                        oct(perms.fileperms)))
                 if perms.fileuser or perms.filegroup:
                     if not perms.fileuser:
                         uid = os.stat(event.src_path).st_uid
                     else:
                         uid = pwd.getpwnam(perms.fileuser).pw_uid
-                        msg.append("Changed user to {}.".format(perms.fileuser))
+                        msg.append(
+                            "Changed user to {}.".format(perms.fileuser))
                     if not perms.filegroup:
                         gid = os.stat(event.src_path).st_uid
                     else:
